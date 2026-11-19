@@ -1,0 +1,49 @@
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*secret*
+*credential*
+*api_key*
+*apikey*
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+ENV/
+
+# SQLite databases and journal files
+*.db
+*.sqlite
+*.sqlite3
+*.db-*
+*.sqlite-*
+*-journal
+*-wal
+*-shm
+
+# Private local data and snapshots
+backups/
+quarantine/
+quarantined/
+uploads/**
+!uploads/.gitkeep
+reports/**
+!reports/.gitkeep
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+*.temp
+*.swp
+.DS_Store
+Thumbs.db

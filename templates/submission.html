@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block content %}
+{% set rubric_items = details.rubric or [] %}
+{% set max_marks = rubric_items|sum(attribute='maximum') if rubric_items else 10 %}
+{% set scored_criteria = rubric_items|selectattr('status', 'ne', 'NOT EVALUATED')|list %}
+{% set no_correctness_evidence = rubric_items and not scored_criteria and details.tests == [] %}
+{% set pending_decision = row.status not in ('Approved', 'Rejected') %}
+{% set low_evidence = relevance.requires_review or no_correctness_evidence %}
+
+<a class="back" href="{{ url_for('dashboard') }}">← Faculty dashboard</a>
+<section class="hero detail-hero">
+  <div><div class="eyebrow">EVALUATION REPORT · {{ row.student_code }}</div><h1>{{ row.assignment }}</h1><p>{{ row.student }} · {{ row.filename }}</p></div>
+  <span class="pill {{ 'green' if row.status=='Approved' else 'amber' }}">{{ row.status }}</span>
+</section>
+<div class="banner"><div class="banner-icon">◉</div><div><b>{{ details.mode or 'STATIC REVIEW ONLY' }}</b><p>Student code was not executed. Test results are NOT RUN without a secure sandbox.</p></div></div>
+{% if details.legacy_history_source %}<div class="banner feedback-callout warn"><div class="banner-icon">◷</div><div><b>Historical results are quarantined</b><p>The legacy fixture snapshot is retained for audit and is excluded from current evidence, marks, test status, and learning comparisons.</p></div></div>{% endif %}
+{% if relevance.requires_review %}<div class="banner feedback-callout warn"><div class="banner-icon">⚑</div><div><b>Potential assignment mismatch — faculty review required</b><p>This static warning does not prove correctness or reject the submission. The system awards no correctness credit without verified evidence.</p>{% for evidence in relevance.evidence %}<p>• {{ evidence }}</p>{% endfor %}</div></div>{% endif %}
+
+<section class="report-status-grid" aria-label="Evaluation status summary">
+  <article class="stat-card"><small>Proposed marks</small><strong>{{ row.proposed or 0 }} <i>/ {{ max_marks }}</i></strong><em>{{ 'Faculty approval required' if pending_decision else ('Approved proposal' if row.status == 'Approved' else 'Rejected proposal') }}</em></article>
+  <article class="stat-card"><small>Final marks</small><strong>{% if row.status == 'Approved' and row.final is not none %}{{ row.final }} <i>/ {{ max_marks }}</i>{% else %}Not recorded{% endif %}</strong><em>{{ 'Faculty-approved result' if row.status == 'Approved' else 'No final mark recorded' }}</em></article>
+  <article class="stat-card"><small>Test status</small><strong>NOT RUN</strong><em>No secure sandbox configured</em></article>
+  <article class="stat-card"><small>Faculty decision</small><strong class="status-word">{{ 'Pending human review' if pending_decision else row.status }}</strong><em>{{ 'No automatic approval' if pending_decision else 'Recorded by faculty' }}</em></article>
+  <article class="stat-card"><small>Syntax</small><strong class="status-word">{{ details.compilation }}</strong><em>Static AST validation</em></article>
+  <article class="stat-card"><small>Execution status</small><strong class="status-word">{{ details.execution }}</strong><em>Never run on host</em></article>
+</section>
+{% if row.status != 'Approved' and row.status != 'Rejected' and no_correctness_evidence and (row.proposed or 0) == 0 %}
+<section class="proposal-explanation" aria-label="Proposed marks explanation">
+  <h2>{{ (row.proposed or 0)|round(0)|int }}/{{ max_marks|round(0)|int }} proposed — no marks could be supported by the currently available evidence.</h2>
+  <p>This is not a verified score of the student's actual program correctness. Student code was not executed and tests were not run.</p>
+  <strong>Final marks pending faculty review.</strong>
+</section>
+{% endif %}
+
+<section class="columns report-columns">
+  <div class="panel">
+    <div class="eyebrow">PERSONALIZED REPORT · DETERMINISTIC FEEDBACK</div>
+    <h2>Feedback for {{ row.student }}</h2>
+    <div class="feedback-callout">{{ feedback.summary }}</div>
+    {% if low_evidence %}
+    <section class="guidance-panel">
+      <div class="guidance-label">Assignment-oriented learning guidance</div>
+      <p>These are general practice recommendations based on the assignment requirements and available static observations. They do not establish that a particular program mistake occurred.</p>
+      <ul>
+        <li>Identify the required inputs and outputs in the assignment.</li>
+        <li>Break the task into smaller steps before writing the function.</li>
+        <li>Trace one small example by hand and compare each step with the expected behavior.</li>
+        <li>Consider empty, boundary, and unusual inputs described by the assignment.</li>
+      </ul>
+      <p class="guidance-evidence"><b>Evidence distinction:</b> syntax and listed static observations are shown separately below. Relevance concerns are unverified and require faculty judgment; program behavior is not verified.</p>
+    </section>
+    {% endif %}
+    <div class="learner-badge">{{ feedback.learner_status or 'Learning profile checked' }} · {{ feedback.historical_labs or 0 }} prior approved lab(s)</div>
+    <p class="history-note">{{ feedback.trend or 'No prior approved mark is stored for this student.' }}</p>
+
+    <section class="comparison-box"><h2>LEARNING HISTORY &amp; PERFORMANCE COMPARISON</h2><div class="history-grid"><div class="history-card"><small>Previous approved evaluation</small><strong>{% if feedback.previous_approved_mark is not none %}{{ feedback.previous_approved_mark|round(0)|int }} / 10{% else %}—{% endif %}</strong><span>Final faculty-approved SQLite mark</span></div><div class="history-card current"><small>Current proposed evaluation</small><strong>{{ (feedback.current_proposed_mark if feedback.current_proposed_mark is not none else row.proposed)|round(0)|int }} / 10</strong><span>Correctness NOT EVALUATED · faculty review required</span></div></div><p class="report-line"><b>Previous observed topic:</b> {{ feedback.previous_topics|join(', ') if feedback.previous_topics else 'None recorded' }}</p><p class="report-line"><b>Current observed topic:</b> {{ feedback.current_topics|join(', ') if feedback.current_topics else 'Not identified' }}</p><p class="report-line"><b>Comparability:</b> <strong>{{ feedback.topic_comparability|replace('_',' ')|upper }}</strong> — {{ feedback.comparability_reason }}</p><p class="report-line"><b>Improvement:</b> <strong>{{ feedback.improvement_status|replace('_',' ')|upper }}</strong> — {{ feedback.improvement_reason }}</p>{% if feedback.topic_comparability=='not_comparable' %}<p class="muted">These are different tasks. A mark difference does not establish learning improvement.</p>{% else %}<p class="muted">A mark difference alone does not establish learning improvement; execution and tests were NOT RUN.</p>{% endif %}<p class="muted">Faculty approval remains mandatory.</p>
+    <h3>Previous observed mistakes</h3>{% for item in feedback.previous_mistake_comparison %}<p class="report-line warn"><span class="pill amber">{{ item.status|replace('_',' ') }}</span> {{ item.mistake }} <small>{{ item.reason }}</small></p>{% else %}<p class="muted">No previous observed mistakes are stored.</p>{% endfor %}
+    <h3>Current observations and concerns</h3><p class="muted">A listed concern is not a proven program defect unless verified evidence supports it.</p>{% for item in feedback.current_mistake_comparison %}<p class="report-line"><span class="pill {{ 'amber' if item.status in ('not_comparable','repeated') else 'blue' }}">{{ 'Unverified concern' if relevance.requires_review else item.status|replace('_',' ') }}</span> {{ item.mistake }} <small>{{ item.reason }}</small></p>{% else %}<p class="muted">No current static-analysis findings.</p>{% endfor %}
+    <p class="report-line"><b>Evidence-backed improvement status:</b> <span class="pill {{ 'green' if feedback.improvement_status=='supported' else 'amber' }}">{{ feedback.improvement_status|replace('_',' ') }}</span></p></section>
+    <h3>What went well</h3>{% for x in feedback.strengths or [] %}<p class="report-line">✓ {{ x }}</p>{% else %}<p class="muted">No positive evidence recorded yet.</p>{% endfor %}
+    {% if feedback.previous_strengths %}<h3>Previously demonstrated strengths</h3>{% for x in feedback.previous_strengths %}<p class="report-line">↻ {{ x }}</p>{% endfor %}{% endif %}
+    <h3>Areas to improve</h3>{% for x in feedback.improvements or [] %}<p class="report-line warn">↗ {{ x }}</p>{% endfor %}
+    <h3>Constructive next steps</h3>{% for x in feedback.hints or [] %}<p class="report-line">✦ {{ x }}</p>{% endfor %}<p class="muted">{{ feedback.personalization }}</p>
+    <h3>Concepts to practice</h3>{% for concept in feedback.concepts or [] %}<span class="pill blue">{{ concept }}</span> {% endfor %}
+    {% if feedback.previous_weak_concepts %}<h3>Previously weak concepts</h3>{% for concept in feedback.previous_weak_concepts %}<p class="report-line warn">{{ concept }}</p>{% endfor %}{% endif %}
+    <h3>Recommended exercises</h3>{% for x in feedback.practice or [] %}<p class="report-line">• {{ x }}</p>{% endfor %}
+    {% if feedback.recurring %}<h3>Recurring mistakes confirmed from history</h3>{% for x in feedback.recurring %}<p class="report-line warn">↻ {{ x }}</p>{% endfor %}{% endif %}
+    {% if feedback.improved_concepts %}<h3>Improvement supported by current evidence</h3>{% for x in feedback.improved_concepts %}<p class="report-line">✓ {{ x }} <small>Supported by current static evidence.</small></p>{% endfor %}{% endif %}
+  </div>
+
+  <aside class="panel report-evidence-panel">
+    <div class="eyebrow">AGENT EXECUTION TRACE</div>
+    <h2>Evaluation timeline</h2>
+    <p class="muted">Completed steps below come from the report's recorded agent events. A skipped step is never presented as an agent run.</p>
+    {% if details.legacy_history_source %}
+      <div class="trace-notice"><b>Current workflow trace unavailable</b><p>This quarantined report has no persisted current execution sequence. Its visible static review was reconstructed for display; historical fixture results remain audit-only.</p></div>
+      {% set legacy_audit = namespace(events=[]) %}
+      {% set reconstructed_notes = namespace(events=[]) %}
+      {% for d in details.decisions or [] %}{% if d.action == 'historical_legacy_results_quarantined' %}{% set _ = legacy_audit.events.append(d) %}{% else %}{% set _ = reconstructed_notes.events.append(d) %}{% endif %}{% endfor %}
+      {% if legacy_audit.events %}<div class="trace-notice recovered"><b>Historical quarantine audit record</b><p>This is preserved historical fixture information, not current evaluation evidence.</p>{% for d in legacy_audit.events %}<p>{{ d.detail }}</p>{% endfor %}</div>{% endif %}
+      {% if reconstructed_notes.events %}<div class="trace-notice"><b>Reconstructed display notes · not a recorded execution trace</b><p>These static review descriptions were prepared for the report view and do not claim that an agent ran for this quarantined record.</p>{% for d in reconstructed_notes.events %}<p><b>{{ d.action|replace('_',' ') }}:</b> {{ d.detail }}</p>{% endfor %}</div>{% endif %}
+    {% else %}
+      {% set trace = namespace(recorded=[], recovered=[], learning_invoked=false) %}
+      {% for d in details.decisions or [] %}
+        {% if '_recovered' in d.action %}{% set _ = trace.recovered.append(d) %}{% else %}{% set _ = trace.recorded.append(d) %}{% if d.agent == 'Learning Agent' %}{% set trace.learning_invoked = true %}{% endif %}{% endif %}
+      {% endfor %}
+      {% if trace.recorded %}
+      <ol class="agent-timeline">
+        {% for d in trace.recorded %}
+        <li class="timeline-step">
+          <span class="timeline-marker {{ 'marker-learning' if d.agent=='Learning Agent' else 'marker-eval' if d.agent=='Evaluation Agent' else 'marker-supervisor' }}"></span>
+          <div class="timeline-content">
+            <div class="timeline-heading"><span class="timeline-actor">{% if d.action[:6] == 'route_' %}Conditional routing{% else %}{{ d.agent }}{% endif %}</span><span class="timeline-status">Completed</span></div>
+            <b>{{ d.action|replace('_',' ') }}</b>
+            <p>{{ d.detail }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}<div class="trace-notice"><b>No recorded agent events</b><p>The report does not contain a persisted agent execution sequence.</p></div>{% endif %}
+      {% if not trace.learning_invoked %}<div class="skipped-step"><span class="timeline-status skipped">Skipped</span><b>Learning Agent</b><p>No Learning Agent event is recorded for this report.</p></div>{% endif %}
+      {% if trace.recovered %}<div class="trace-notice recovered"><b>Recovered historical trace details</b><p>These descriptions were reconstructed from saved evaluation fields and do not prove that an agent ran during the current evaluation.</p>{% for d in trace.recovered %}<p><b>{{ d.action|replace('_',' ') }}:</b> {{ d.detail }}</p>{% endfor %}</div>{% endif %}
+    {% endif %}
+    <div class="faculty-step {{ 'faculty-pending' if pending_decision else 'faculty-complete' }}"><span class="timeline-status">{{ 'Pending human decision' if pending_decision else row.status }}</span><b>Faculty review</b><p>{% if pending_decision %}A faculty member must approve or reject this report. No final mark has been recorded.{% elif row.status == 'Approved' %}Faculty recorded the final mark of {{ row.final }} / {{ max_marks }}.{% else %}Faculty rejected this report; no final mark is recorded.{% endif %}</p></div>
+
+    {% if row.faculty_feedback %}<div class="feedback-callout faculty-note">Faculty feedback: {{ row.faculty_feedback }}</div>{% endif %}
+    <h3>Rubric breakdown</h3>{% for item in details.rubric or [] %}<p class="report-line"><b>{{ item.criterion }} · {{ item.maximum }} marks:</b> {{ item.status }} <small>{{ item.evidence_type|replace('_',' ')|title }} evidence — {{ item.evidence }}</small></p>{% else %}<p class="muted">No rubric breakdown is stored.</p>{% endfor %}
+    <h3>Verified observations</h3><p class="muted">Static syntax validation confirms parseability only; it does not verify program behavior.</p>{% for item in details.evidence.verified or [] %}<p class="report-line">✓ {{ item }}</p>{% else %}<p class="muted">No verified program behavior evidence.</p>{% endfor %}
+    <h3>Static observations</h3>{% for item in details.evidence.static_observations or [] %}<p class="report-line">◇ {{ item }}</p>{% else %}<p class="muted">No relevant static observations recorded.</p>{% endfor %}
+    {% for e in details.errors or [] %}<p class="report-line warn">⚠ {{ e }}</p>{% endfor %}
+    <h3>NOT EVALUATED</h3><p class="muted">Execution: {{ details.execution }} · Test cases: NOT RUN</p>{% for item in details.evidence.not_evaluated or [] %}<p class="report-line">{{ item }}</p>{% endfor %}
+    {% if flags %}<div class="feedback-callout warn">Similarity flag: {{ flags[0].score }}% token similarity. Faculty review required; this is not a misconduct finding.</div>{% endif %}
+    {% if row.status!='Approved' %}<form class="approve" method="post" action="{{ url_for('approve',sid=row.id) }}"><label>Faculty feedback<textarea name="faculty_feedback" rows="2">{{ row.faculty_feedback or '' }}</textarea></label><label>Approve or adjust final mark<input name="mark" type="number" min="0" max="{{ max_marks }}" step="0.5" value="{{ row.proposed or 0 }}"></label><button class="button primary wide">✓ Approve final mark</button></form><form method="post" action="{{ url_for('reject',sid=row.id) }}"><label>Reason for rejection<textarea name="faculty_feedback" rows="2">{{ row.faculty_feedback or '' }}</textarea></label><button class="button secondary wide">Reject submission</button></form>{% else %}<div class="approved-mark">Approved final mark <b>{{ row.final }} / {{ max_marks }}</b></div><a class="button secondary wide" href="{{ url_for('student_dashboard',code=row.student_code) }}">View student report →</a>{% endif %}
+  </aside>
+</section>
+{% endblock %}

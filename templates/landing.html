@@ -1,0 +1,49 @@
+{% extends 'base.html' %}{% block content %}
+<section class="landing-hero">
+  <div class="landing-kicker"><span></span> PROGRAMMING LABS, WITH CLEARER FEEDBACK</div>
+  <h1>LabMentor <em>AI</em></h1>
+  <p class="landing-tagline">Agentic AI-powered Programming Lab Evaluation and Personalized Learning Assistant.</p>
+  <p class="landing-intro">A shared workspace for faculty review and student learning, with evaluation evidence and approval status kept visible.</p>
+</section>
+
+<section class="portal-grid" aria-label="Choose a portal">
+  <article class="portal-card faculty-card">
+    <div class="portal-icon" aria-hidden="true">⌘</div>
+    <div class="eyebrow">FOR EDUCATORS</div>
+    <h2>Faculty Portal</h2>
+    <p>Manage assignments, review submissions, inspect evaluation reports, approve or reject marks, and monitor student performance.</p>
+    <ul>
+      <li>Assignment and rubric workspace</li>
+      <li>Submission review queue and detailed traces</li>
+      <li>Faculty-controlled marks and CSV reports</li>
+    </ul>
+    <a class="button primary portal-action" href="{{ url_for('dashboard') }}">Open faculty dashboard <span aria-hidden="true">→</span></a>
+    <small class="portal-access-note">Local demo access · sign-in and role checks are not implemented.</small>
+  </article>
+
+  <article class="portal-card student-card">
+    <div class="portal-icon student-icon" aria-hidden="true">↗</div>
+    <div class="eyebrow">FOR LEARNERS</div>
+    <h2>Student Portal</h2>
+    <p>Open the existing student report to see faculty-approved results, understand feedback, and follow learning recommendations and progress.</p>
+    <ul>
+      <li>Approved marks and evaluation reports</li>
+      <li>Explanations and topics to practice</li>
+      <li>Learning history across comparable work</li>
+    </ul>
+    <form class="portal-entry" method="post" action="{{ url_for('student_portal') }}">
+      <label for="student-code">Student code</label>
+      <div class="portal-entry-row">
+        <input id="student-code" name="student_code" autocomplete="off" placeholder="e.g. S2401" required>
+        <button class="button primary" type="submit">Open report <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+    <small class="portal-access-note">A student code selects a demo report; it does not verify identity.</small>
+  </article>
+</section>
+
+<section class="landing-note">
+  <span class="note-mark">i</span>
+  <p><b>Local demonstration only.</b> The app has no authentication or role-based authorization. Keep it on localhost; portal links are navigation, not security controls.</p>
+</section>
+{% endblock %}

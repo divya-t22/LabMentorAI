@@ -1,0 +1,33 @@
+.landing-hero{max-width:820px;text-align:center;margin:24px auto 34px;padding:28px 12px 8px}
+.landing-kicker{display:inline-flex;align-items:center;gap:9px;color:#8eb8d7;font-size:10px;font-weight:700;letter-spacing:1.45px}
+.landing-kicker span{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 14px #42dec080}
+.landing-hero h1{font-size:clamp(42px,7vw,68px);letter-spacing:-2.4px;margin:16px 0 10px}
+.landing-hero h1 em{font-style:normal;color:#68dbd2}
+.landing-tagline{max-width:700px;margin:0 auto;color:#d9e9fa;font:600 clamp(17px,2.5vw,22px)/1.5 Manrope,sans-serif}
+.landing-intro{max-width:650px;margin:13px auto 0;color:var(--muted);font-size:14px;line-height:1.7}
+.portal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1000px;margin:0 auto}
+.portal-card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:420px;padding:27px;background:linear-gradient(145deg,#13233a,#101a2b 78%);border:1px solid #2b4260;border-radius:17px;box-shadow:0 18px 50px #02091645}
+.portal-card:before{content:"";position:absolute;width:190px;height:190px;right:-80px;top:-105px;border-radius:50%;background:#4188ff17;pointer-events:none}
+.student-card:before{background:#42dec018}
+.portal-icon{display:grid;place-items:center;width:44px;height:44px;margin-bottom:20px;border-radius:12px;background:#1c3454;color:#91baff;font-size:23px}
+.student-icon{background:#173b3b;color:#6de0cd}
+.portal-card .eyebrow{color:#89a9cc}
+.portal-card h2{margin:8px 0 10px;font-size:24px}
+.portal-card>p{min-height:66px;margin:0;color:#adbed3;font-size:13px;line-height:1.7}
+.portal-card ul{display:grid;gap:10px;margin:17px 0 23px;padding:0;list-style:none;color:#d0deef;font-size:12px}
+.portal-card li{position:relative;padding-left:19px}
+.portal-card li:before{content:"✓";position:absolute;left:0;color:var(--teal);font-weight:700}
+.portal-action{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:auto;padding:13px 15px}
+.portal-entry{margin-top:auto;padding-top:8px}
+.portal-entry label{margin:0;color:#a9bad0;font-size:11px;font-weight:600}
+.portal-entry-row{display:flex;gap:9px;align-items:center;margin-top:5px}
+.portal-entry-row input{min-width:0;margin:0;height:40px}
+.portal-entry-row button{flex:none;height:40px}
+.portal-access-note{display:block;margin-top:11px;color:#8499b3;font-size:10px;line-height:1.5}
+.landing-note{display:flex;gap:12px;align-items:flex-start;max-width:1000px;margin:20px auto 0;padding:14px 16px;border:1px solid #293b54;border-radius:10px;background:#0e1929;color:#9eafc4}
+.landing-note p{margin:0;font-size:11px;line-height:1.6}
+.landing-note b{color:#dce8f7}
+.note-mark{display:grid;place-items:center;flex:none;width:20px;height:20px;border-radius:50%;background:#21344d;color:#92b9e8;font:700 12px Manrope}
+.portal-card a:focus-visible,.portal-entry input:focus-visible,.portal-entry button:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+@media(max-width:760px){.landing-hero{margin:10px auto 24px;padding-top:18px}.portal-grid{grid-template-columns:1fr;max-width:560px}.portal-card{min-height:0}.portal-card>p{min-height:0}.landing-note{max-width:560px}}
+@media(max-width:480px){.landing-hero h1{letter-spacing:-1.5px}.portal-card{padding:21px}.portal-entry-row{align-items:stretch;flex-direction:column}.portal-entry-row input,.portal-entry-row button{width:100%}.landing-note{margin-top:15px}}
